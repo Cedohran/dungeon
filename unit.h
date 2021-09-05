@@ -9,6 +9,8 @@ struct Unit{
     char icon;
 };
 
-int movePlayer(Unit *u, char direction, Level *level);
+int move_and_set_player(Unit *u, char direction, Level *level);
 
-int moveEnemy(Unit *u, Level *level);
+int move_enemy(Unit *u, Level *level);
+
+void set_enemies(Unit *enemy_list, Level *level);

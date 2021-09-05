@@ -58,23 +58,41 @@ int main(int argc, char **argv){
     while( (opt = getopt(argc, argv, ":i:o:")) != -1){
         switch(opt){
             case 'i': 
+                if(player_input != stdin){
+                    fprintf(stderr, "Error, duplicate option.\n");
+                    //close if necessary
+                    if(game_output != stdout) fclose(game_output);
+                    fclose(player_input);
+                    return 3;
+                }
                 if((player_input = fopen(optarg, "r")) == NULL){
-                    printf("Error, wrong parameter %s.\n", optarg);
-                    return(3);
+                    fprintf(stderr, "Error, could not open %s\n", optarg);
+                    //close if necessary
+                    if(game_output != stdout) fclose(game_output);
+                    return 1;
                 } 
                 break;
             case 'o':
+                if(game_output != stdout){
+                    fprintf(stderr, "Error, duplicate option.\n");
+                    //close if necessary
+                    if(player_input != stdin) fclose(game_output);
+                    fclose(game_output);
+                    return 3;
+                }
                 if((game_output = fopen(optarg, "w")) == NULL){
-                    printf("Error, wrong parameter %s.\n", optarg);
-                    return(3);
+                    fprintf(stderr, "Error, could not open %s\n", optarg);
+                    //close if necessary
+                    if(player_input != stdin) fclose(player_input);
+                    return 1;
                 } 
                 break;
             case':':
-                printf("Error, missing parameter.\n");
+                fprintf(stderr, "Error, missing parameter.\n");
                 return(3);
                 break;
             case'?':
-                printf("Error, unkown option: %c\n", optopt);
+                fprintf(stderr, "Error, unkown option: %c\n", optopt);
                 return(3);
                 break;
         }
@@ -82,15 +100,50 @@ int main(int argc, char **argv){
     //Ueberpruefung der restlichen Argumente
     argc -= optind;
     argv += optind;
-
-    if(argc == 1 && (strstr(*argv, ".txt") != NULL)){
+    
+    //too many arguments
+    if(argc > 1){
+        fprintf(stderr, "Error, too many arguments.\n");
+        //close if necessary
+        if(game_output != stdout) fclose(game_output);
+        if(player_input != stdin) fclose(player_input);
+        return 3;
+    }
+    //check for level_file argument
+    if(argc == 1){
+        //can level_file be opened?
         if((level_file = fopen(*argv, "r")) == NULL){
-            printf("%s could not be opened.", *argv);
+            fprintf(stderr, "Error, could not open %s\n", *argv);
+            //close if necessary
+            if(game_output != stdout) fclose(game_output);
+            if(player_input != stdin) fclose(player_input);
             return 1;
-        } 
-    } 
+        }//check if level_file is readable 
+        else if(getc(level_file) == EOF){
+            fprintf(stderr, "Error, could not read level file.\n");
+            if(game_output != stdout) fclose(game_output);
+            if(player_input != stdin) fclose(player_input);
+            fclose(level_file);
+            return 2;
+        } else {
+            rewind(level_file);
+        }
+    }//no argument, open default level 1 
     else {
         level_file = fopen("level/1.txt", "r");
+    }
+    //test whether control input file can be read
+    if(player_input != stdin) {
+        if(getc(player_input) == EOF){
+            fprintf(stderr, "Error, could not read control input.\n");
+            //close
+            if(game_output != stdout) fclose(game_output);
+            fclose(player_input);
+            fclose(level_file);
+            return 2;
+        } else {
+            rewind(player_input);
+        }
     }
 
     //initialize level and units
@@ -100,12 +153,8 @@ int main(int argc, char **argv){
     enemy_list->icon = 'f';
     enemy_list->next_unit = NULL;
     Unit *enemy_pointer;
+
     level = loadLevel(level_file);
-    //check if level is valid
-    /*if((level = loadLevel(level_file)) == NULL){
-        printf("Level file is invalid.");
-        return 2;
-    }*/
     loadUnits(player, enemy_list, level);
     enemy_pointer = enemy_list;
     printLevel(level, game_output);

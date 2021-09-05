@@ -17,6 +17,6 @@ Level* loadLevel(FILE *input);
 
 void printLevel(Level *level, FILE *game_output);
 
-void freeList(Level_row *list);
+void freeList(Level_row *list, int row_count);
 
 void free_level_data(Level *level);

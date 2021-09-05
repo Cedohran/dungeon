@@ -51,18 +51,12 @@ Level* loadLevel(FILE *input){
             counter = 0;
             row_count++;
         } else{
-            //HIER IST DER FEHLER
             row_pointer->string[counter] = next_char;
             row_pointer->string[counter+1] = '\0';
-            //char *new_string = realloc(row_pointer->string, strlen(row_pointer->string)+2);; 
             row_pointer->string = realloc(row_pointer->string, strlen(row_pointer->string)+ (2 * sizeof(char))); 
             counter++;
         }
     }
-    //check if level is valid
-    /*if(row_count < 3) {
-        return NULL;
-    }*/
     //last row is empty
     row_count--;
     free(row_pointer->string);
