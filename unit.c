@@ -4,7 +4,7 @@
 #include "unit.h"
 
 //return values:  -1 - player can't move because of wall, 0 - player moves, 1 - player exits the dungeon
-int movePlayer(Unit *u, char direction, Level *level) {
+int move_and_set_player(Unit *u, char direction, Level *level) {
     int move_x = 0;
     move_x = u->x_coord;
     int move_y = 0;
@@ -48,7 +48,7 @@ int movePlayer(Unit *u, char direction, Level *level) {
         u->y_coord = move_y;
         return 1;
     }//if player moves into enemy, step on him
-    else if(next_field != '<' || next_field != '>' || next_field != '^' || next_field != 'v') {
+    else if(next_field == '<' || next_field == '>' || next_field == '^' || next_field == 'v') {
         level->level_string[u->y_coord][u->x_coord] = ' ';
         level->level_string[move_y][move_x] = u->icon;
         u->x_coord = move_x;
@@ -60,7 +60,7 @@ int movePlayer(Unit *u, char direction, Level *level) {
 }
 
 //return values:  -1 - enemy turns around, 0 - enemy moves, 1 - enemy eats player
-int moveEnemy(Unit *u, Level *level) {
+int move_enemy(Unit *u, Level *level) {
     int move_x = 0;
     move_x = u->x_coord;
     int move_y = 0;
@@ -87,20 +87,21 @@ int moveEnemy(Unit *u, Level *level) {
     }
     //look at next destination
     next_field = level->level_string[move_y][move_x];
+    if(!player_on_top) level->level_string[u->y_coord][u->x_coord] = ' ';
 
     //field is empty -> enemy can move
     if(next_field == ' ') {
         //move enemy icon
-        //do not errase if player was on top
-        if(!player_on_top) level->level_string[u->y_coord][u->x_coord] = ' ';
-        if(next_field != '<' || next_field != '>' || next_field != '^' || next_field != 'v'){
-            level->level_string[move_y][move_x] = u->icon;
-        }
         u->x_coord = move_x;
         u->y_coord = move_y;
         return 0;
-    }//wall, enemy turns around
-    else if(next_field == '#') {
+    }else if(next_field == '<' || next_field == '>' || next_field == '^' || next_field == 'v') {
+        u->x_coord = move_x;
+        u->y_coord = move_y;
+        return 0;
+    }
+    //wall or door, enemy turns around
+    else if(next_field == '#' || next_field == 'A') {
         switch (u->icon){
             case '<': 
                 u->icon = '>';
@@ -115,8 +116,6 @@ int moveEnemy(Unit *u, Level *level) {
                 u->icon = 'v';
                 break;
         }
-        //turn enemy around
-        level->level_string[u->y_coord][u->x_coord] = u->icon;
         //kill player if on top while turning around
         if(player_on_top) return 1;
         return -1;
@@ -124,11 +123,22 @@ int moveEnemy(Unit *u, Level *level) {
     else if(next_field == 'S'){
         //move enemy icon
         //do no errase if player was on top
-        if(!player_on_top) level->level_string[u->y_coord][u->x_coord] = ' ';
-        level->level_string[move_y][move_x] = u->icon;
         u->x_coord = move_x;
         u->y_coord = move_y;
         return 1;
     }
     return -1;
+}
+
+//sets enemy icons on level
+void set_enemies(Unit *enemy_list, Level *level){
+    Unit *enemy_pointer = enemy_list;
+    char field_char;
+    while(enemy_pointer != NULL) {
+        field_char = level->level_string[enemy_pointer->y_coord][enemy_pointer->x_coord];
+        if ((field_char != '<') && (field_char != '>') && (field_char != '^') && (field_char != 'v')){
+            level->level_string[enemy_pointer->y_coord][enemy_pointer->x_coord] = enemy_pointer->icon;
+        }
+        enemy_pointer = enemy_pointer->next_unit;
+    }
 }
